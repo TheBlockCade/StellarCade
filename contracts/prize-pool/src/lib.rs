@@ -2,6 +2,7 @@
 //!
 //! This contract manages user balances, platform fees, and prize distributions.
 #![no_std]
+#![allow(unexpected_cfgs)]
 
 use soroban_sdk::{contract, contractimpl, Address, Env};
 
@@ -11,13 +12,14 @@ pub struct PrizePool;
 #[contractimpl]
 impl PrizePool {
     /// Initialize the contract with the platform admin.
-    pub fn initialize(env: Env, admin: Address) {
+    pub fn initialize(_env: Env, _admin: Address) {
         // TODO: Store admin address in storage
         // TODO: Emit initialization event
     }
 
     /// Deposit tokens into the prize pool.
-    pub fn deposit(env: Env, from: Address, amount: i128) {
+    pub fn deposit(_env: Env, from: Address, _amount: i128) {
+        from.require_auth();
         // TODO: Validate amount > 0
         // TODO: Use token client to transfer tokens to this contract
         // TODO: Update user balance in storage
@@ -25,8 +27,8 @@ impl PrizePool {
     }
 
     /// Withdraw tokens from the user's balance.
-    pub fn withdraw(env: Env, to: Address, amount: i128) {
-        // TODO: Verify authorization
+    pub fn withdraw(_env: Env, to: Address, _amount: i128) {
+        to.require_auth();
         // TODO: Check user balance
         // TODO: Update user balance
         // TODO: Transfer tokens to user
@@ -34,13 +36,13 @@ impl PrizePool {
     }
 
     /// Get the current balance of a user.
-    pub fn get_balance(env: Env, user: Address) -> i128 {
+    pub fn get_balance(_env: Env, _user: Address) -> i128 {
         // TODO: Retrieve balance from storage, default to 0
         0
     }
 
     /// Calculate the potential payout after fees.
-    pub fn calculate_payout(env: Env, amount: i128) -> i128 {
+    pub fn calculate_payout(_env: Env, amount: i128) -> i128 {
         // TODO: Apply house fee logic
         amount
     }

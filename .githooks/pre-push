@@ -6,15 +6,18 @@ set -e
 
 echo "🚀 Running pre-push verification (Build & Test)..."
 
-# 1. Build and Test Rust Contracts
-echo "🦀 Verifying Rust contracts..."
+# 1. Strict Rust Contract Verification
+echo "🦀 Running strict Rust verification (fmt, clippy, build, test)..."
 if command -v cargo >/dev/null 2>&1; then
-    # We use 'check' for speed on push, 'build --release' is left for CI
-    # But as per user request, we run a full check/test
-    cd contracts/shared && cargo check && cd ../..
-    cd contracts/prize-pool && cargo check && cd ../..
-    cd contracts/random-generator && cargo check && cd ../..
-    cd contracts/coin-flip && cargo check && cd ../..
+    for dir in contracts/shared contracts/prize-pool contracts/random-generator contracts/coin-flip; do
+        echo "   Checking $dir..."
+        cd "$dir"
+        cargo fmt --all -- --check
+        cargo clippy --all-targets --all-features -- -D warnings
+        cargo build
+        cargo test
+        cd - > /dev/null
+    done
 else
     echo "⚠️ Cargo not found, skipping Rust verification."
 fi

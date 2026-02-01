@@ -11,12 +11,19 @@ const authMiddleware = (req, res, next) => {
     return res.status(401).json({ message: 'No token provided' });
   }
 
+  if (!process.env.JWT_SECRET) {
+    logger.error('JWT_SECRET is not configured in environment');
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ['HS256'],
+    });
     req.user = decoded;
     next();
   } catch (error) {
-    logger.warn('Invalid JWT attempt');
+    logger.warn(`Invalid JWT attempt from ${req.ip}`);
     return res.status(401).json({ message: 'Invalid token' });
   }
 };

@@ -26,7 +26,8 @@ const User = {
    */
   async create(userData) {
     try {
-      return await db('users').insert(userData).returning('*');
+      const users = await db('users').insert(userData).returning('*');
+      return users[0];
     } catch (error) {
       logger.error('Error in User.create:', error);
       throw error;

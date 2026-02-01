@@ -1,5 +1,6 @@
 //! Shared utilities and data structures for Stellarcade contracts.
 #![no_std]
+#![allow(unexpected_cfgs)]
 
 use soroban_sdk::{contracttype, Address};
 
@@ -26,6 +27,15 @@ pub struct PlatformConfig {
 pub const BASIS_POINTS_DIVISOR: u32 = 10_000;
 
 /// Helper to calculate fee based on amount and basis points.
-pub fn calculate_fee(amount: i128, fee_bps: u32) -> i128 {
-    (amount * fee_bps as i128) / BASIS_POINTS_DIVISOR as i128
+pub fn calculate_fee(amount: i128, fee_bps: u32) -> Result<i128, Error> {
+    if amount < 0 {
+        return Err(Error::InvalidAmount);
+    }
+    if fee_bps > BASIS_POINTS_DIVISOR {
+        return Err(Error::InvalidAmount);
+    }
+    amount
+        .checked_mul(fee_bps as i128)
+        .and_then(|v| v.checked_div(BASIS_POINTS_DIVISOR as i128))
+        .ok_or(Error::Overflow)
 }

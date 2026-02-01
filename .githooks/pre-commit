@@ -32,7 +32,7 @@ else
     echo "⚠️ NPM not found, skipping backend checks."
 fi
 
-# 3. Add changed files back to the commit
-git add .
+# 3. Add changed tracked files back to the commit
+git add -u
 
 echo "✅ Pre-commit checks passed!"

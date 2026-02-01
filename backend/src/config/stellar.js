@@ -1,4 +1,4 @@
-const StellarSdk = require('stellar-sdk');
+const StellarSdk = require('@stellar/stellar-sdk');
 const logger = require('./logger'); // Changed _logger to logger as it's used
 const _gameService = require('../services/game.service'); // Added this line
 

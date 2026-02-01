@@ -5,7 +5,7 @@ Follow these steps to set up Stellarcade for local development.
 ## 📋 Prerequisites
 
 - **Rust**: [Install Rust](https://www.rust-lang.org/tools/install)
-- **Soroban CLI**: `cargo install --locked soroban-cli`
+- **Stellar CLI**: `cargo install --locked stellar-cli` (or use `brew install stellar-cli` on macOS)
 - **Node.js**: [Install Node.js v18+](https://nodejs.org/)
 - **Docker**: [Install Docker Desktop](https://www.docker.com/products/docker-desktop)
 - **Stellar Wallet**: Use a testnet account (e.g., via [Laboratory](https://laboratory.stellar.org/))
@@ -15,7 +15,7 @@ Follow these steps to set up Stellarcade for local development.
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/stellar/stellarcade.git
+   git clone https://github.com/TheBlockCade/StellarCade.git
    cd stellarcade
    ```
 

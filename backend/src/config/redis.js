@@ -8,8 +8,11 @@ const client = createClient({
 client.on('error', (err) => logger.error('Redis Client Error', err));
 client.on('connect', () => logger.info('Redis connected successfully'));
 
-client.connect().catch((err) => {
+const connectPromise = client.connect().catch((err) => {
   logger.error('Redis connection failed:', err);
 });
 
-module.exports = client;
+module.exports = {
+  client,
+  connectPromise,
+};

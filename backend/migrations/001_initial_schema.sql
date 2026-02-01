@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Games Table
 CREATE TABLE IF NOT EXISTS games (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     game_type VARCHAR(30) NOT NULL, -- coin-flip, trivia, etc.
     bet_amount NUMERIC(20, 7) NOT NULL,
     result VARCHAR(20) NOT NULL, -- win, loss, pending
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS games (
 -- Transactions Table
 CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type VARCHAR(20) NOT NULL, -- deposit, withdrawal
     amount NUMERIC(20, 7) NOT NULL,
     status VARCHAR(20) DEFAULT 'pending', -- pending, success, failed
