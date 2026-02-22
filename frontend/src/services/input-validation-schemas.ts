@@ -148,57 +148,37 @@ export const MAX_PLAYERS_PER_ROUND = 500;
 export function validateRoundId(
   value: bigint | string | number | null | undefined,
 ): ValidationResult<bigint> {
-  if (value === null || value === undefined || value === '') {
+  const result = validateGameId(value);
+
+  if (!result.success) {
+    const MESSAGE_MAP: Partial<Record<string, string>> = {
+      'Game ID is required': 'Round ID is required',
+      'Game ID must be a valid integer': 'Round ID must be a valid integer',
+      'Game ID must be non-negative': 'Round ID must be non-negative',
+    };
     return {
       success: false,
       error: {
-        code: ValidationErrorCode.Required,
-        message: 'Round ID is required',
+        ...result.error,
         field: 'roundId',
+        message: MESSAGE_MAP[result.error.message] ?? result.error.message,
       },
     };
   }
 
-  let parsed: bigint;
-  try {
-    parsed = typeof value === 'bigint' ? value : BigInt(value);
-  } catch {
-    return {
-      success: false,
-      error: {
-        code: ValidationErrorCode.InvalidType,
-        message: 'Round ID must be a valid integer',
-        field: 'roundId',
-        context: { value },
-      },
-    };
-  }
-
-  if (parsed < 0n) {
-    return {
-      success: false,
-      error: {
-        code: ValidationErrorCode.OutOfRange,
-        message: 'Round ID must be non-negative',
-        field: 'roundId',
-        context: { value: parsed.toString() },
-      },
-    };
-  }
-
-  if (parsed > U64_MAX) {
+  if (result.data > U64_MAX) {
     return {
       success: false,
       error: {
         code: ValidationErrorCode.OutOfRange,
         message: 'Round ID exceeds maximum u64 value',
         field: 'roundId',
-        context: { value: parsed.toString(), max: U64_MAX.toString() },
+        context: { value: result.data.toString(), max: U64_MAX.toString() },
       },
     };
   }
 
-  return { success: true, data: parsed };
+  return result;
 }
 
 // ── Coin Flip Prediction Validation ───────────────────────────────────────────
@@ -298,7 +278,14 @@ export function validatePatternSolution(
 export function validatePatternCommitment(
   value: string | null | undefined,
 ): ValidationResult<string> {
-  return validateSha256Hash(value);
+  const result = validateSha256Hash(value);
+  if (!result.success) {
+    return {
+      success: false,
+      error: { ...result.error, field: 'commitmentHash' },
+    };
+  }
+  return result;
 }
 
 // ── Puzzle Entry Fee Validation ────────────────────────────────────────────────
@@ -338,7 +325,7 @@ export function validatePuzzleEntryFee(
   }
 
   const result = validateWager(value, bounds);
-  if (!result.success && result.error.field === 'wager') {
+  if (!result.success) {
     return {
       success: false,
       error: { ...result.error, field: 'entryFee' },

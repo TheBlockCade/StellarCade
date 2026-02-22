@@ -257,13 +257,19 @@ describe('validatePatternCommitment', () => {
   it('rejects hash with wrong length', () => {
     const result = validatePatternCommitment('abc123');
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error.code).toBe(ValidationErrorCode.InvalidHash);
+    if (!result.success) {
+      expect(result.error.code).toBe(ValidationErrorCode.InvalidHash);
+      expect(result.error.field).toBe('commitmentHash');
+    }
   });
 
   it('rejects null', () => {
     const result = validatePatternCommitment(null);
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error.code).toBe(ValidationErrorCode.Required);
+    if (!result.success) {
+      expect(result.error.code).toBe(ValidationErrorCode.Required);
+      expect(result.error.field).toBe('commitmentHash');
+    }
   });
 });
 
