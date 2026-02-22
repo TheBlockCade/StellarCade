@@ -102,6 +102,16 @@ export const COIN_FLIP_WAGER_BOUNDS: WagerBounds = {
 };
 
 /**
+ * Amount bounds for PrizePool reservation and payout operations (in stroops).
+ * Kept separate from COIN_FLIP_WAGER_BOUNDS so prize-pool limits can diverge
+ * from coin-flip limits independently in the future.
+ */
+export const PRIZE_POOL_AMOUNT_BOUNDS: WagerBounds = {
+  min: 10_000_000n,    // 1 XLM
+  max: 10_000_000_000n, // 1 000 XLM
+};
+
+/**
  * Entry-fee bounds for the Pattern Puzzle contract.
  * min = 0n because free rounds (entry_fee = 0) are valid per the contract.
  */
@@ -259,10 +269,26 @@ export function validateCoinFlipPrediction(
 export function validatePatternSolution(
   value: string | null | undefined,
 ): ValidationResult<string> {
-  return validateString(value, 'solution', {
-    minLength: 1,
-    maxLength: PUZZLE_SOLUTION_MAX_BYTES,
-  });
+  // Perform the basic string checks (required, min length) first.
+  const stringResult = validateString(value, 'solution', { minLength: 1 });
+  if (!stringResult.success) return stringResult;
+
+  // validateString uses string.length (UTF-16 code units). Solutions are stored
+  // as Bytes on-chain, so we must enforce the limit against UTF-8 byte length.
+  const byteLength = new TextEncoder().encode(stringResult.data).length;
+  if (byteLength > PUZZLE_SOLUTION_MAX_BYTES) {
+    return {
+      success: false,
+      error: {
+        code: ValidationErrorCode.TooLong,
+        message: `Solution cannot exceed ${PUZZLE_SOLUTION_MAX_BYTES} bytes`,
+        field: 'solution',
+        context: { byteLength, max: PUZZLE_SOLUTION_MAX_BYTES },
+      },
+    };
+  }
+
+  return stringResult;
 }
 
 /**
@@ -501,7 +527,7 @@ export function parsePrizePoolReservation(
   const gameIdResult = validateGameId(input.gameId);
   if (!gameIdResult.success) return gameIdResult;
 
-  const amountResult = validateWager(input.amount, input.amountBounds ?? COIN_FLIP_WAGER_BOUNDS);
+  const amountResult = validateWager(input.amount, input.amountBounds ?? PRIZE_POOL_AMOUNT_BOUNDS);
   if (!amountResult.success) {
     return {
       success: false,
@@ -545,7 +571,7 @@ export function parsePrizePoolPayout(
   const gameIdResult = validateGameId(input.gameId);
   if (!gameIdResult.success) return gameIdResult;
 
-  const amountResult = validateWager(input.amount, input.amountBounds ?? COIN_FLIP_WAGER_BOUNDS);
+  const amountResult = validateWager(input.amount, input.amountBounds ?? PRIZE_POOL_AMOUNT_BOUNDS);
   if (!amountResult.success) {
     return {
       success: false,

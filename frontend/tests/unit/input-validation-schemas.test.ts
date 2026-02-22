@@ -17,6 +17,9 @@ import {
   PUZZLE_SOLUTION_MAX_BYTES,
   // Primitives
   ValidationErrorCode,
+  validateWager,
+  validateGameId,
+  validateStellarAddress,
   // Round ID
   validateRoundId,
   // Coin Flip
@@ -592,20 +595,17 @@ describe('checkGamePreconditions', () => {
 // ── Re-exported primitives ────────────────────────────────────────────────────
 
 describe('re-exported primitive validators', () => {
-  it('validateWager is re-exported and functional', async () => {
-    const { validateWager } = await import('../../src/services/input-validation-schemas');
+  it('validateWager is re-exported and functional', () => {
     const result = validateWager(50_000_000n);
     expect(result.success).toBe(true);
   });
 
-  it('validateGameId is re-exported and functional', async () => {
-    const { validateGameId } = await import('../../src/services/input-validation-schemas');
+  it('validateGameId is re-exported and functional', () => {
     const result = validateGameId('42');
     expect(result.success).toBe(true);
   });
 
-  it('validateStellarAddress is re-exported and functional', async () => {
-    const { validateStellarAddress } = await import('../../src/services/input-validation-schemas');
+  it('validateStellarAddress is re-exported and functional', () => {
     const result = validateStellarAddress(VALID_WALLET);
     expect(result.success).toBe(true);
   });
