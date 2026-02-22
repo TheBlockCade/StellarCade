@@ -320,7 +320,10 @@ export function validatePuzzleEntryFee(
     }
 
     if (parsed === 0n) {
-      return { success: true, data: 0n };
+      if (bounds.min <= 0n) {
+        return { success: true, data: 0n };
+      }
+      // 0 is below the custom min — fall through to validateWager
     }
   }
 

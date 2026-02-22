@@ -316,6 +316,12 @@ describe('validatePuzzleEntryFee', () => {
     const result = validatePuzzleEntryFee(50_000, customBounds);
     expect(result.success).toBe(true);
   });
+
+  it('rejects zero when custom bounds require min > 0', () => {
+    const customBounds = { min: 1_000_000n, max: 10_000_000_000n };
+    const result = validatePuzzleEntryFee(0, customBounds);
+    expect(result.success).toBe(false);
+  });
 });
 
 // ── parseCoinFlipBet ──────────────────────────────────────────────────────────
