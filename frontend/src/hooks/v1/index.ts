@@ -5,5 +5,8 @@
  */
 
 export * from "./validation";
+export * from "./useWalletStatus";
 export * from "./useAsyncAction";
+
 export * from "./useDebouncedValue";
+
