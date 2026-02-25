@@ -1,0 +1,76 @@
+@keyframes stellarcade-skeleton-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+.stellarcade-skeleton {
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  animation: stellarcade-skeleton-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .stellarcade-skeleton.dark-support {
+    background-color: #334155;
+  }
+}
+
+.dark .stellarcade-skeleton {
+  background-color: #334155;
+}
+
+.stellarcade-skeleton-base {
+  display: block;
+}
+
+.stellarcade-skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+
+.dark .stellarcade-skeleton-card {
+  border-color: #334155;
+}
+
+.stellarcade-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stellarcade-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stellarcade-error-state {
+  padding: 1rem;
+  color: #ef4444;
+  background-color: #fef2f2;
+  border: 1px solid #f87171;
+  border-radius: 0.5rem;
+}
+
+.dark .stellarcade-error-state {
+  background-color: #450a0a;
+  border-color: #7f1d1d;
+}
+
+.stellarcade-empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+}
+
+.dark .stellarcade-empty-state {
+  color: #94a3b8;
+  border-color: #475569;
+}
