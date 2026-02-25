@@ -1,9 +1,9 @@
 /** @type {import('jest').Config} */
 const config = {
   preset: "ts-jest",
-  testEnvironment: "node",
+  testEnvironment: "jsdom",
   roots: ["<rootDir>/tests"],
-  testMatch: ["**/*.test.ts"],
+  testMatch: ["**/*.test.{ts,tsx}"],
   transform: {
     "^.+\\.tsx?$": [
       "ts-jest",
@@ -17,6 +17,7 @@ const config = {
   },
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "\\.(css|less|scss|sass)$": "<rootDir>/tests/__mocks__/styleMock.js",
   },
   // Stub import.meta for Node/Jest environment.
   globals: {
