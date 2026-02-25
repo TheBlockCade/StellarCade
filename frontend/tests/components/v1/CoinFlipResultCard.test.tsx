@@ -13,14 +13,14 @@ describe('CoinFlipResultCard', () => {
 
     it('renders loading state', () => {
         render(<CoinFlipResultCard isLoading />);
-        expect(screen.getByTestId('coinflip-skeleton')).toBeTruthy();
+        expect(screen.getByTestId('coinflip-skeleton')).toBeInTheDocument();
     });
 
     it('renders error state', () => {
         const error = new Error('Network failed');
         render(<CoinFlipResultCard error={error} />);
-        expect(screen.getByTestId('coinflip-error')).toBeTruthy();
-        expect(screen.getByText(/Network failed/i)).toBeTruthy();
+        expect(screen.getByTestId('coinflip-error')).toBeInTheDocument();
+        expect(screen.getByText(/Network failed/i)).toBeInTheDocument();
     });
 
     it('renders retry button and triggers callback', () => {
@@ -35,15 +35,15 @@ describe('CoinFlipResultCard', () => {
 
     it('renders empty state', () => {
         render(<CoinFlipResultCard game={null} />);
-        expect(screen.getByTestId('coinflip-empty')).toBeTruthy();
+        expect(screen.getByTestId('coinflip-empty')).toBeInTheDocument();
     });
 
     it('renders pending game', () => {
         render(<CoinFlipResultCard game={mockGame} />);
-        expect(screen.getByTestId('coinflip-content')).toBeTruthy();
-        expect(screen.getByText('game-123')).toBeTruthy();
-        expect(screen.getByText('1 XLM')).toBeTruthy();
-        expect(screen.getByText('Placed')).toBeTruthy();
+        expect(screen.getByTestId('coinflip-content')).toBeInTheDocument();
+        expect(screen.getByText('game-123')).toBeInTheDocument();
+        expect(screen.getByText('1 XLM')).toBeInTheDocument();
+        expect(screen.getByText('Placed')).toBeInTheDocument();
     });
 
     it('renders resolve button for pending game when onResolve is provided', () => {
@@ -63,9 +63,9 @@ describe('CoinFlipResultCard', () => {
         };
         render(<CoinFlipResultCard game={resolvedGame} currentWalletAddress="player-xyz" />);
 
-        expect(screen.getByText('Resolved')).toBeTruthy();
-        expect(screen.getByText(/You Won!/i)).toBeTruthy();
-        expect(screen.getByText('2 XLM')).toBeTruthy(); // Payout is double
+        expect(screen.getByText('Resolved')).toBeInTheDocument();
+        expect(screen.getByText(/You Won!/i)).toBeInTheDocument();
+        expect(screen.getByText('2 XLM')).toBeInTheDocument(); // Payout is double
     });
 
     it('renders loss state correctly', () => {
@@ -76,8 +76,8 @@ describe('CoinFlipResultCard', () => {
         };
         render(<CoinFlipResultCard game={resolvedGame} currentWalletAddress="player-xyz" />);
 
-        expect(screen.getByText('Resolved')).toBeTruthy();
-        expect(screen.getByText(/Better luck next time/i)).toBeTruthy();
-        expect(screen.getByText('0 XLM')).toBeTruthy();
+        expect(screen.getByText('Resolved')).toBeInTheDocument();
+        expect(screen.getByText(/Better luck next time/i)).toBeInTheDocument();
+        expect(screen.getByText('0 XLM')).toBeInTheDocument();
     });
 });

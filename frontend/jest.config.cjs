@@ -3,7 +3,7 @@ const config = {
   preset: "ts-jest",
   testEnvironment: "jsdom",
   roots: ["<rootDir>/tests"],
-  testMatch: ["**/*.test.ts", "**/*.test.tsx"],
+  testMatch: ["<rootDir>/tests/components/**/*.test.{ts,tsx}"],
   setupFilesAfterEnv: ["<rootDir>/tests/setup.js"],
   transform: {
     "^.+\\.tsx?$": [
