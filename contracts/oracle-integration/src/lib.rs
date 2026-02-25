@@ -95,6 +95,20 @@ fn renew_persistent_ttl(env: &Env, key: &DataKey) -> Result<(), Error> {
     Ok(())
 }
 
+fn renew_instance_ttl(env: &Env) -> Result<(), Error> {
+    let max_ttl = env.storage().max_ttl();
+
+    let threshold = max_ttl
+        .checked_sub(TTL_RENEW_WINDOW)
+        .ok_or(Error::Overflow)?;
+
+    env.storage()
+        .instance()
+        .extend_ttl(threshold, max_ttl);
+
+    Ok(())
+}
+
 //
 // ─────────────────────────────────────────────
 // CONTRACT IMPLEMENTATION
@@ -125,6 +139,8 @@ impl OracleIntegration {
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::OracleSources, &oracle_sources_config);
 
+        renew_instance_ttl(&env)?;
+
         Initialized { admin }.publish(&env);
 
         Ok(())
@@ -133,15 +149,17 @@ impl OracleIntegration {
     // ───────── REQUEST DATA ─────────
 
     pub fn request_data(
-        env: Env,
-        caller: Address,
-        feed_id: BytesN<32>,
-        request_id: BytesN<32>,
-    ) -> Result<(), Error> {
+    env: Env,
+    caller: Address,
+    feed_id: BytesN<32>,
+    request_id: BytesN<32>,
+) -> Result<(), Error> {
 
-        caller.require_auth();
+    caller.require_auth();
 
-        let zero = BytesN::from_array(&env, &[0; 32]);
+    renew_instance_ttl(&env)?;
+
+    let zero = BytesN::from_array(&env, &[0; 32]);
         if feed_id == zero || request_id == zero {
             return Err(Error::InvalidInput);
         }
@@ -181,6 +199,8 @@ impl OracleIntegration {
     ) -> Result<(), Error> {
 
         caller.require_auth();
+
+        renew_instance_ttl(&env)?;
 
         if payload.is_empty() {
             return Err(Error::InvalidInput);
