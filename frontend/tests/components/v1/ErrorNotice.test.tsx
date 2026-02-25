@@ -27,9 +27,7 @@ describe("ErrorNotice", () => {
 
     const alertElement = screen.getByRole("alert");
     expect(alertElement).toBeInTheDocument();
-    expect(alertElement).toHaveTextContent(
-      "Please connect your wallet to continue.",
-    );
+    expect(alertElement).toHaveTextContent("Wallet not connected");
   });
 
   it("should show retry button for retryable errors", () => {
