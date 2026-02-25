@@ -1,0 +1,52 @@
+import { describe, expect, it, vi } from "vitest";
+
+import {
+  clearNetworkGuardOperationLocks,
+  withNetworkGuard,
+} from "../../src/services/network-guard-middleware";
+
+describe("network guard middleware integration", () => {
+  it("prevents side effects on unsupported chains", async () => {
+    const sideEffect = vi.fn(async () => "should-not-run");
+
+    await expect(
+      withNetworkGuard(
+        {
+          walletConnected: true,
+          provider: {
+            async getNetwork() {
+              return { network: "PUBLIC" };
+            },
+          },
+          supportedNetworks: ["TESTNET"],
+        },
+        sideEffect,
+      ),
+    ).rejects.toMatchObject({ code: "NETWORK_UNSUPPORTED" });
+
+    expect(sideEffect).not.toHaveBeenCalled();
+  });
+
+  it("runs side effects on supported chain", async () => {
+    const sideEffect = vi.fn(async () => "ok");
+
+    await expect(
+      withNetworkGuard(
+        {
+          walletConnected: true,
+          provider: {
+            async getNetwork() {
+              return { networkPassphrase: "Test SDF Network ; September 2015" };
+            },
+          },
+          supportedNetworks: ["TESTNET"],
+          operationKey: "mint-1",
+        },
+        sideEffect,
+      ),
+    ).resolves.toBe("ok");
+
+    expect(sideEffect).toHaveBeenCalledTimes(1);
+    clearNetworkGuardOperationLocks();
+  });
+});
