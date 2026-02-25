@@ -6,9 +6,12 @@ import type {
   QueryPolicy,
 } from "../types/query-cache";
 import type { AppError } from "../types/errors";
-import { toAppError, validatePreconditions } from "./error-mapping";
+import { toAppError, validatePreconditions } from "../utils/v1/errorMapper";
 
-type Subscriber = (evt: { key: QueryKey; entry: CacheEntry<unknown> | null }) => void;
+type Subscriber = (evt: {
+  key: QueryKey;
+  entry: CacheEntry<unknown> | null;
+}) => void;
 
 export const QueryKeys = {
   balances: {
@@ -17,8 +20,16 @@ export const QueryKeys = {
   },
   games: {
     root: (): QueryKey => ["games", "root"],
-    byId: (gameId: string | number): QueryKey => ["games", "byId", String(gameId)],
-    recentByAddress: (address: string): QueryKey => ["games", "recentByAddress", address],
+    byId: (gameId: string | number): QueryKey => [
+      "games",
+      "byId",
+      String(gameId),
+    ],
+    recentByAddress: (address: string): QueryKey => [
+      "games",
+      "recentByAddress",
+      address,
+    ],
   },
   rewards: {
     root: (): QueryKey => ["rewards", "root"],
@@ -118,8 +129,11 @@ export class QueryCache {
     const ts = now();
     const existing = this.get<T>(key);
 
-    const effectivePolicy =
-      policy ?? QueryPolicies[String(key[0])] ?? { staleTimeMs: 30_000, refetchOnInvalidate: true };
+    const effectivePolicy = policy ??
+      QueryPolicies[String(key[0])] ?? {
+        staleTimeMs: 30_000,
+        refetchOnInvalidate: true,
+      };
 
     const entry: CacheEntry<T> = {
       key,
@@ -168,12 +182,16 @@ export class QueryCache {
    * - success: cache is updated atomically
    * - failure: cache is NOT mutated
    */
-  async getOrFetch<T>(key: QueryKey): Promise<{ data: T } | { error: AppError }> {
+  async getOrFetch<T>(
+    key: QueryKey,
+  ): Promise<{ data: T } | { error: AppError }> {
     try {
       const existing = this.get<T>(key);
       if (existing && !this.isStale(key)) return { data: existing.data };
 
-      const fetcher = this.fetchers.get(keyToString(key)) as Fetcher<T> | undefined;
+      const fetcher = this.fetchers.get(keyToString(key)) as
+        | Fetcher<T>
+        | undefined;
       if (!fetcher) {
         return {
           error: toAppError(new Error("Missing fetcher"), undefined, {
@@ -235,7 +253,9 @@ export class QueryCache {
    * On failure, keeps existing data but marks invalidated.
    */
   async refetch<T>(key: QueryKey): Promise<{ data: T } | { error: AppError }> {
-    const fetcher = this.fetchers.get(keyToString(key)) as Fetcher<T> | undefined;
+    const fetcher = this.fetchers.get(keyToString(key)) as
+      | Fetcher<T>
+      | undefined;
     if (!fetcher) {
       return {
         error: toAppError(new Error("Missing fetcher"), undefined, {
@@ -315,7 +335,10 @@ export class QueryCacheInvalidator {
     }
   }
 
-  private invalidateAchievementBadge(addresses: string[], evt: CacheInvalidationEvent) {
+  private invalidateAchievementBadge(
+    addresses: string[],
+    evt: CacheInvalidationEvent,
+  ) {
     for (const addr of addresses) {
       this.cache.invalidate(QueryKeys.rewards.byAddress(addr), evt);
       this.cache.invalidate(QueryKeys.profile.byAddress(addr), evt);
@@ -352,7 +375,8 @@ export class QueryCacheInvalidator {
         : {}),
     };
 
-    const addresses = evt.contractTx?.addresses ?? evt.mutation?.addresses ?? [];
+    const addresses =
+      evt.contractTx?.addresses ?? evt.mutation?.addresses ?? [];
     const gameId = evt.contractTx?.gameId;
 
     // Balances are critical after any on-chain state mutation.

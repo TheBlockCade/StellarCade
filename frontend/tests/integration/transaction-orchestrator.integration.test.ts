@@ -46,7 +46,7 @@ describe('useTransactionOrchestrator integration', () => {
           error: {
             code: 'RPC_TX_REJECTED',
             domain: ErrorDomain.RPC,
-            severity: ErrorSeverity.FATAL,
+            severity: ErrorSeverity.TERMINAL,
             message: 'Rejected by network',
           },
         }),

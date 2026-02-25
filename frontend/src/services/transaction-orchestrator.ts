@@ -5,8 +5,8 @@
  * validate -> submit -> confirm with retry and deterministic transitions.
  */
 
-import { toAppError } from './error-mapping';
-import { ErrorDomain, ErrorSeverity, type AppError } from '../types/errors';
+import { toAppError } from "../utils/v1/errorMapper";
+import { ErrorDomain, ErrorSeverity, type AppError } from "../types/errors";
 import {
   ConfirmationStatus,
   OrchestratorErrorCode,
@@ -19,7 +19,7 @@ import {
   type TransactionRequest,
   type TransactionResult,
   type TransactionStateSubscriber,
-} from '../types/transaction-orchestrator';
+} from "../types/transaction-orchestrator";
 
 const DEFAULT_RETRY_POLICY: RetryPolicy = {
   maxAttempts: 3,
@@ -30,13 +30,31 @@ const DEFAULT_RETRY_POLICY: RetryPolicy = {
 const DEFAULT_POLL_INTERVAL_MS = 2_000;
 const DEFAULT_CONFIRMATION_TIMEOUT_MS = 30_000;
 
-const ALLOWED_TRANSITIONS: Readonly<Record<TransactionPhase, ReadonlyArray<TransactionPhase>>> = {
+const ALLOWED_TRANSITIONS: Readonly<
+  Record<TransactionPhase, ReadonlyArray<TransactionPhase>>
+> = {
   [TransactionPhase.IDLE]: [TransactionPhase.VALIDATING],
-  [TransactionPhase.VALIDATING]: [TransactionPhase.SUBMITTING, TransactionPhase.FAILED],
-  [TransactionPhase.SUBMITTING]: [TransactionPhase.SUBMITTED, TransactionPhase.RETRYING, TransactionPhase.FAILED],
-  [TransactionPhase.SUBMITTED]: [TransactionPhase.CONFIRMING, TransactionPhase.FAILED],
-  [TransactionPhase.CONFIRMING]: [TransactionPhase.CONFIRMED, TransactionPhase.FAILED],
-  [TransactionPhase.RETRYING]: [TransactionPhase.SUBMITTING, TransactionPhase.FAILED],
+  [TransactionPhase.VALIDATING]: [
+    TransactionPhase.SUBMITTING,
+    TransactionPhase.FAILED,
+  ],
+  [TransactionPhase.SUBMITTING]: [
+    TransactionPhase.SUBMITTED,
+    TransactionPhase.RETRYING,
+    TransactionPhase.FAILED,
+  ],
+  [TransactionPhase.SUBMITTED]: [
+    TransactionPhase.CONFIRMING,
+    TransactionPhase.FAILED,
+  ],
+  [TransactionPhase.CONFIRMING]: [
+    TransactionPhase.CONFIRMED,
+    TransactionPhase.FAILED,
+  ],
+  [TransactionPhase.RETRYING]: [
+    TransactionPhase.SUBMITTING,
+    TransactionPhase.FAILED,
+  ],
   [TransactionPhase.CONFIRMED]: [],
   [TransactionPhase.FAILED]: [],
 };
@@ -61,17 +79,23 @@ export class TransactionOrchestrator {
 
   constructor(options: TransactionOrchestratorOptions = {}) {
     this.now = options.now ?? (() => Date.now());
-    this.sleep = options.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.sleep =
+      options.sleep ??
+      ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
     this.generateCorrelationId =
-      options.generateCorrelationId ?? (() => `tx-${this.now()}-${Math.random().toString(16).slice(2, 10)}`);
+      options.generateCorrelationId ??
+      (() => `tx-${this.now()}-${Math.random().toString(16).slice(2, 10)}`);
   }
 
   getState<TData = unknown>(): TransactionOrchestratorState<TData> {
     return { ...(this.state as TransactionOrchestratorState<TData>) };
   }
 
-  subscribe<TData = unknown>(subscriber: TransactionStateSubscriber<TData>): () => void {
-    const wrapped: TransactionStateSubscriber = subscriber as TransactionStateSubscriber;
+  subscribe<TData = unknown>(
+    subscriber: TransactionStateSubscriber<TData>,
+  ): () => void {
+    const wrapped: TransactionStateSubscriber =
+      subscriber as TransactionStateSubscriber;
     this.subscribers.add(wrapped);
     wrapped(this.getState());
     return () => {
@@ -88,20 +112,28 @@ export class TransactionOrchestrator {
     this.notify();
   }
 
-  async execute<TInput, TData>(request: TransactionRequest<TInput, TData>): Promise<TransactionResult<TData>> {
+  async execute<TInput, TData>(
+    request: TransactionRequest<TInput, TData>,
+  ): Promise<TransactionResult<TData>> {
     if (!this.isIdleOrTerminal()) {
-      const correlationId = this.state.correlationId ?? this.generateCorrelationId();
+      const correlationId =
+        this.state.correlationId ?? this.generateCorrelationId();
       const err = this.makeOrchestratorError(
         OrchestratorErrorCode.DUPLICATE_IN_FLIGHT,
         correlationId,
         {
-          code: 'API_VALIDATION_ERROR',
+          code: "API_VALIDATION_ERROR",
           domain: ErrorDomain.API,
           severity: ErrorSeverity.USER_ACTIONABLE,
-          message: 'Another transaction is already in progress.',
+          message: "Another transaction is already in progress.",
         },
       );
-      return { success: false, correlationId, error: err, state: this.getState() };
+      return {
+        success: false,
+        correlationId,
+        error: err,
+        state: this.getState(),
+      };
     }
 
     const startedAt = this.now();
@@ -120,12 +152,20 @@ export class TransactionOrchestrator {
 
     const preconditionError = request.validatePreconditions?.() ?? null;
     if (preconditionError) {
-      return this.failWith(correlationId, OrchestratorErrorCode.PRECONDITION_FAILED, preconditionError);
+      return this.failWith(
+        correlationId,
+        OrchestratorErrorCode.PRECONDITION_FAILED,
+        preconditionError,
+      );
     }
 
     const inputError = request.validateInput?.(request.input) ?? null;
     if (inputError) {
-      return this.failWith(correlationId, OrchestratorErrorCode.INVALID_INPUT, inputError);
+      return this.failWith(
+        correlationId,
+        OrchestratorErrorCode.INVALID_INPUT,
+        inputError,
+      );
     }
 
     const retryPolicy = {
@@ -133,7 +173,12 @@ export class TransactionOrchestrator {
       ...request.retryPolicy,
     };
 
-    const submitResult = await this.submitWithRetry(request, retryPolicy, correlationId, startedAt);
+    const submitResult = await this.submitWithRetry(
+      request,
+      retryPolicy,
+      correlationId,
+      startedAt,
+    );
     if (!submitResult.success) {
       return submitResult;
     }
@@ -178,7 +223,12 @@ export class TransactionOrchestrator {
     startedAt: number,
   ): Promise<
     | { success: true; txHash: string; data: TData }
-    | { success: false; correlationId: string; error: OrchestratorError; state: TransactionOrchestratorState<TData> }
+    | {
+        success: false;
+        correlationId: string;
+        error: OrchestratorError;
+        state: TransactionOrchestratorState<TData>;
+      }
   > {
     let attempt = 0;
 
@@ -196,13 +246,20 @@ export class TransactionOrchestrator {
 
       try {
         const submission = await request.submit(request.input, context);
-        if (typeof submission.txHash !== 'string' || submission.txHash.trim() === '') {
-          return this.failWith(correlationId, OrchestratorErrorCode.SUBMISSION_FAILED, {
-            code: 'API_VALIDATION_ERROR',
-            domain: ErrorDomain.API,
-            severity: ErrorSeverity.FATAL,
-            message: 'Submission returned an empty transaction hash.',
-          });
+        if (
+          typeof submission.txHash !== "string" ||
+          submission.txHash.trim() === ""
+        ) {
+          return this.failWith(
+            correlationId,
+            OrchestratorErrorCode.SUBMISSION_FAILED,
+            {
+              code: "API_VALIDATION_ERROR",
+              domain: ErrorDomain.API,
+              severity: ErrorSeverity.TERMINAL,
+              message: "Submission returned an empty transaction hash.",
+            },
+          );
         }
 
         return {
@@ -218,23 +275,34 @@ export class TransactionOrchestrator {
           attempt,
         });
 
-        if (appError.severity === ErrorSeverity.RETRYABLE && attempt < retryPolicy.maxAttempts) {
+        if (
+          appError.severity === ErrorSeverity.RETRYABLE &&
+          attempt < retryPolicy.maxAttempts
+        ) {
           this.transition(TransactionPhase.RETRYING, { attempt });
           const waitMs = this.computeBackoffMs(retryPolicy, attempt);
           await this.sleep(waitMs);
           continue;
         }
 
-        return this.failWith(correlationId, OrchestratorErrorCode.SUBMISSION_FAILED, appError);
+        return this.failWith(
+          correlationId,
+          OrchestratorErrorCode.SUBMISSION_FAILED,
+          appError,
+        );
       }
     }
 
-    return this.failWith(correlationId, OrchestratorErrorCode.SUBMISSION_FAILED, {
-      code: 'UNKNOWN',
-      domain: ErrorDomain.UNKNOWN,
-      severity: ErrorSeverity.FATAL,
-      message: 'Submission retry budget exhausted.',
-    });
+    return this.failWith(
+      correlationId,
+      OrchestratorErrorCode.SUBMISSION_FAILED,
+      {
+        code: "UNKNOWN",
+        domain: ErrorDomain.UNKNOWN,
+        severity: ErrorSeverity.TERMINAL,
+        message: "Submission retry budget exhausted.",
+      },
+    );
   }
 
   private async confirmUntilSettled<TInput, TData>(
@@ -246,7 +314,12 @@ export class TransactionOrchestrator {
     timeoutMs: number,
   ): Promise<
     | { success: true; confirmations: number }
-    | { success: false; correlationId: string; error: OrchestratorError; state: TransactionOrchestratorState<TData> }
+    | {
+        success: false;
+        correlationId: string;
+        error: OrchestratorError;
+        state: TransactionOrchestratorState<TData>;
+      }
   > {
     this.transition(TransactionPhase.CONFIRMING, {});
 
@@ -264,18 +337,23 @@ export class TransactionOrchestrator {
         if (confirmation.status === ConfirmationStatus.CONFIRMED) {
           return {
             success: true,
-            confirmations: confirmation.confirmations ?? this.state.confirmations,
+            confirmations:
+              confirmation.confirmations ?? this.state.confirmations,
           };
         }
 
         if (confirmation.status === ConfirmationStatus.FAILED) {
           const appError = confirmation.error ?? {
-            code: 'RPC_TX_REJECTED',
+            code: "RPC_TX_REJECTED",
             domain: ErrorDomain.RPC,
-            severity: ErrorSeverity.FATAL,
-            message: 'Transaction confirmation failed.',
+            severity: ErrorSeverity.TERMINAL,
+            message: "Transaction confirmation failed.",
           };
-          return this.failWith(correlationId, OrchestratorErrorCode.CONFIRMATION_FAILED, appError);
+          return this.failWith(
+            correlationId,
+            OrchestratorErrorCode.CONFIRMATION_FAILED,
+            appError,
+          );
         }
 
         this.transition(TransactionPhase.CONFIRMING, {
@@ -290,7 +368,11 @@ export class TransactionOrchestrator {
         });
 
         if (appError.severity !== ErrorSeverity.RETRYABLE) {
-          return this.failWith(correlationId, OrchestratorErrorCode.CONFIRMATION_FAILED, appError);
+          return this.failWith(
+            correlationId,
+            OrchestratorErrorCode.CONFIRMATION_FAILED,
+            appError,
+          );
         }
       }
 
@@ -298,7 +380,7 @@ export class TransactionOrchestrator {
     }
 
     return this.failWith(correlationId, OrchestratorErrorCode.TIMEOUT, {
-      code: 'RPC_CONNECTION_TIMEOUT',
+      code: "RPC_CONNECTION_TIMEOUT",
       domain: ErrorDomain.RPC,
       severity: ErrorSeverity.RETRYABLE,
       message: `Transaction ${txHash} was not confirmed within ${timeoutMs}ms.`,
@@ -315,7 +397,11 @@ export class TransactionOrchestrator {
     error: OrchestratorError;
     state: TransactionOrchestratorState<TData>;
   } {
-    const error = this.makeOrchestratorError(orchestratorCode, correlationId, appError);
+    const error = this.makeOrchestratorError(
+      orchestratorCode,
+      correlationId,
+      appError,
+    );
     this.transition(TransactionPhase.FAILED, {
       error,
       settledAt: this.now(),
@@ -329,17 +415,24 @@ export class TransactionOrchestrator {
     };
   }
 
-  private transition(phase: TransactionPhase, patch: Partial<TransactionOrchestratorState>): void {
+  private transition(
+    phase: TransactionPhase,
+    patch: Partial<TransactionOrchestratorState>,
+  ): void {
     const currentPhase = this.state.phase;
-    if (phase !== currentPhase && !ALLOWED_TRANSITIONS[currentPhase].includes(phase)) {
-      const correlationId = this.state.correlationId ?? this.generateCorrelationId();
+    if (
+      phase !== currentPhase &&
+      !ALLOWED_TRANSITIONS[currentPhase].includes(phase)
+    ) {
+      const correlationId =
+        this.state.correlationId ?? this.generateCorrelationId();
       const error = this.makeOrchestratorError(
         OrchestratorErrorCode.INVALID_STATE,
         correlationId,
         {
-          code: 'UNKNOWN',
+          code: "UNKNOWN",
           domain: ErrorDomain.UNKNOWN,
-          severity: ErrorSeverity.FATAL,
+          severity: ErrorSeverity.TERMINAL,
           message: `Invalid transaction phase transition: ${currentPhase} -> ${phase}`,
         },
       );
@@ -362,7 +455,10 @@ export class TransactionOrchestrator {
       attempt: patch.attempt ?? this.state.attempt,
     };
 
-    if (TERMINAL_TRANSACTION_PHASES.has(phase) && this.state.settledAt === undefined) {
+    if (
+      TERMINAL_TRANSACTION_PHASES.has(phase) &&
+      this.state.settledAt === undefined
+    ) {
       this.state = {
         ...this.state,
         settledAt: this.now(),
@@ -391,10 +487,15 @@ export class TransactionOrchestrator {
 
   private computeBackoffMs(policy: RetryPolicy, attempt: number): number {
     const exponent = Math.max(0, attempt - 1);
-    return Math.round(policy.initialBackoffMs * Math.pow(policy.backoffMultiplier, exponent));
+    return Math.round(
+      policy.initialBackoffMs * Math.pow(policy.backoffMultiplier, exponent),
+    );
   }
 
-  private normalizeError(err: unknown, context: Record<string, unknown>): AppError {
+  private normalizeError(
+    err: unknown,
+    context: Record<string, unknown>,
+  ): AppError {
     if (this.isAppError(err)) {
       return {
         ...err,
@@ -410,17 +511,20 @@ export class TransactionOrchestrator {
 
   private isAppError(value: unknown): value is AppError {
     return (
-      typeof value === 'object' &&
+      typeof value === "object" &&
       value !== null &&
-      'code' in value &&
-      'domain' in value &&
-      'severity' in value &&
-      'message' in value
+      "code" in value &&
+      "domain" in value &&
+      "severity" in value &&
+      "message" in value
     );
   }
 
   private isIdleOrTerminal(): boolean {
-    return this.state.phase === TransactionPhase.IDLE || TERMINAL_TRANSACTION_PHASES.has(this.state.phase);
+    return (
+      this.state.phase === TransactionPhase.IDLE ||
+      TERMINAL_TRANSACTION_PHASES.has(this.state.phase)
+    );
   }
 
   private notify(): void {

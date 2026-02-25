@@ -10,3 +10,4 @@ export * from "./formatters";
 export * from "./useAsyncAction";
 export * from "./idempotency";
 export * from "./useNetworkGuard";
+export * from "./errorMapper";
