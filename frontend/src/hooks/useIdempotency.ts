@@ -208,7 +208,7 @@ export function useIdempotency(config?: StorageConfig): UseIdempotencyReturn {
         // Transition to FAILED or UNKNOWN
         // RETRYABLE → UNKNOWN (can retry later via recovery)
         // USER_ACTIONABLE → FAILED (user must take action, not retryable)
-        // FATAL → FAILED (terminal error, not retryable)
+        // TERMINAL → FAILED (terminal error, not retryable)
         const finalState = isRetryable ? State.UNKNOWN : State.FAILED;
         const failedRequest = service.updateState(key, finalState, {
           error: appError,
@@ -358,7 +358,7 @@ function normalizeError(err: unknown): AppError {
   return {
     code: 'UNKNOWN',
     domain: ErrorDomain.UNKNOWN,
-    severity: ErrorSeverity.FATAL,
+    severity: ErrorSeverity.TERMINAL,
     message: `Transaction failed: ${message.slice(0, 200)}`,
     originalError: err,
   };
@@ -377,7 +377,7 @@ function createClearedError(): AppError {
   return {
     code: 'API_VALIDATION_ERROR',
     domain: ErrorDomain.API,
-    severity: ErrorSeverity.FATAL,
+    severity: ErrorSeverity.TERMINAL,
     message: 'Request was manually cleared',
   };
 }

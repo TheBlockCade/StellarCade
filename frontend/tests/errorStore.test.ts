@@ -18,7 +18,7 @@ function makeError(code: string, message = 'test error'): AppError {
   return {
     code: code as AppError['code'],
     domain: ErrorDomain.UNKNOWN,
-    severity: ErrorSeverity.FATAL,
+    severity: ErrorSeverity.TERMINAL,
     message,
   };
 }

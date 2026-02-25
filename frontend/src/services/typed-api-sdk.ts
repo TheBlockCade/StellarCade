@@ -19,9 +19,9 @@
  * @module services/typed-api-sdk
  */
 
-import { mapApiError, mapRpcError } from './error-mapping';
-import { ErrorDomain, ErrorSeverity } from '../types/errors';
-import type { AppError } from '../types/errors';
+import { mapApiError, mapRpcError } from "../utils/v1/errorMapper";
+import { ErrorDomain, ErrorSeverity } from "../types/errors";
+import type { AppError } from "../types/errors";
 import type {
   ApiResult,
   CreateProfileRequest,
@@ -33,7 +33,7 @@ import type {
   PlayGameResponse,
   WithdrawResponse,
   WalletAmountRequest,
-} from '../types/api-client';
+} from "../types/api-client";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ function sleep(ms: number): Promise<void> {
 
 function makeValidationError(message: string): AppError {
   return {
-    code: 'API_VALIDATION_ERROR',
+    code: "API_VALIDATION_ERROR",
     domain: ErrorDomain.API,
     severity: ErrorSeverity.USER_ACTIONABLE,
     message,
@@ -57,10 +57,10 @@ function makeValidationError(message: string): AppError {
 
 function makeUnauthorizedError(): AppError {
   return {
-    code: 'API_UNAUTHORIZED',
+    code: "API_UNAUTHORIZED",
     domain: ErrorDomain.API,
     severity: ErrorSeverity.USER_ACTIONABLE,
-    message: 'Authentication required. Please sign in again.',
+    message: "Authentication required. Please sign in again.",
   };
 }
 
@@ -124,7 +124,7 @@ export class ApiClient {
   private readonly _sessionStore: SessionStore | undefined;
 
   constructor(opts: ApiClientOptions = {}) {
-    this._baseUrl = opts.baseUrl ?? '/api';
+    this._baseUrl = opts.baseUrl ?? "/api";
     this._sessionStore = opts.sessionStore;
   }
 
@@ -139,7 +139,7 @@ export class ApiClient {
    * @param requiresAuth - When true, the request requires a valid JWT
    */
   private async _request<T>(
-    method: 'GET' | 'POST',
+    method: "GET" | "POST",
     path: string,
     body: unknown,
     requiresAuth: boolean,
@@ -152,10 +152,10 @@ export class ApiClient {
 
     // ── Build headers ────────────────────────────────────────────────────────
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
     if (token !== null) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
     const url = `${this._baseUrl}${path}`;
@@ -177,9 +177,10 @@ export class ApiClient {
         });
       } catch (networkErr) {
         // Network failure (fetch threw) — map and retry
-        lastError = mapRpcError(networkErr, { url, attempt });
-        if (lastError.severity === ErrorSeverity.RETRYABLE) continue;
-        return { success: false, error: lastError };
+        const mappedNetErr = mapRpcError(networkErr, { url, attempt });
+        lastError = mappedNetErr;
+        if (mappedNetErr.severity === ErrorSeverity.RETRYABLE) continue;
+        return { success: false, error: mappedNetErr };
       }
 
       if (response.ok) {
@@ -199,11 +200,18 @@ export class ApiClient {
       // Attach the HTTP status to whatever shape was returned so mapApiError
       // can pattern-match on it consistently.
       const rawWithStatus =
-        typeof errorBody === 'object' && errorBody !== null
-          ? { ...(errorBody as Record<string, unknown>), status: response.status }
+        typeof errorBody === "object" && errorBody !== null
+          ? {
+              ...(errorBody as Record<string, unknown>),
+              status: response.status,
+            }
           : { status: response.status };
 
-      const mapped = mapApiError(rawWithStatus, { url, attempt, status: response.status });
+      const mapped = mapApiError(rawWithStatus, {
+        url,
+        attempt,
+        status: response.status,
+      });
       lastError = mapped;
 
       // Only retry RETRYABLE errors (5xx, 429, network)
@@ -222,7 +230,7 @@ export class ApiClient {
    * `GET /api/games` — no auth required.
    */
   async getGames(): Promise<ApiResult<GetGamesResponse>> {
-    return this._request<GetGamesResponse>('GET', '/games', undefined, false);
+    return this._request<GetGamesResponse>("GET", "/games", undefined, false);
   }
 
   /**
@@ -232,19 +240,21 @@ export class ApiClient {
    * @param req - `{ gameId, wager? }` — gameId must be non-empty.
    */
   async playGame(req: PlayGameRequest): Promise<ApiResult<PlayGameResponse>> {
-    if (!req.gameId || req.gameId.trim() === '') {
+    if (!req.gameId || req.gameId.trim() === "") {
       return {
         success: false,
-        error: makeValidationError('gameId is required and must be a non-empty string.'),
+        error: makeValidationError(
+          "gameId is required and must be a non-empty string.",
+        ),
       };
     }
     if (req.wager !== undefined && req.wager <= 0) {
       return {
         success: false,
-        error: makeValidationError('wager must be greater than zero.'),
+        error: makeValidationError("wager must be greater than zero."),
       };
     }
-    return this._request<PlayGameResponse>('POST', '/games/play', req, true);
+    return this._request<PlayGameResponse>("POST", "/games/play", req, true);
   }
 
   /**
@@ -252,7 +262,12 @@ export class ApiClient {
    * `GET /api/users/profile` — auth required.
    */
   async getProfile(): Promise<ApiResult<GetProfileResponse>> {
-    return this._request<GetProfileResponse>('GET', '/users/profile', undefined, true);
+    return this._request<GetProfileResponse>(
+      "GET",
+      "/users/profile",
+      undefined,
+      true,
+    );
   }
 
   /**
@@ -261,14 +276,23 @@ export class ApiClient {
    *
    * @param req - `{ address, username? }` — address must be non-empty.
    */
-  async createProfile(req: CreateProfileRequest): Promise<ApiResult<CreateProfileResponse>> {
-    if (!req.address || req.address.trim() === '') {
+  async createProfile(
+    req: CreateProfileRequest,
+  ): Promise<ApiResult<CreateProfileResponse>> {
+    if (!req.address || req.address.trim() === "") {
       return {
         success: false,
-        error: makeValidationError('address is required and must be a non-empty string.'),
+        error: makeValidationError(
+          "address is required and must be a non-empty string.",
+        ),
       };
     }
-    return this._request<CreateProfileResponse>('POST', '/users/create', req, false);
+    return this._request<CreateProfileResponse>(
+      "POST",
+      "/users/create",
+      req,
+      false,
+    );
   }
 
   /**
@@ -281,10 +305,10 @@ export class ApiClient {
     if (!req.amount || req.amount <= 0) {
       return {
         success: false,
-        error: makeValidationError('amount must be greater than zero.'),
+        error: makeValidationError("amount must be greater than zero."),
       };
     }
-    return this._request<DepositResponse>('POST', '/wallet/deposit', req, true);
+    return this._request<DepositResponse>("POST", "/wallet/deposit", req, true);
   }
 
   /**
@@ -293,13 +317,20 @@ export class ApiClient {
    *
    * @param req - `{ amount }` — must be greater than zero.
    */
-  async withdraw(req: WalletAmountRequest): Promise<ApiResult<WithdrawResponse>> {
+  async withdraw(
+    req: WalletAmountRequest,
+  ): Promise<ApiResult<WithdrawResponse>> {
     if (!req.amount || req.amount <= 0) {
       return {
         success: false,
-        error: makeValidationError('amount must be greater than zero.'),
+        error: makeValidationError("amount must be greater than zero."),
       };
     }
-    return this._request<WithdrawResponse>('POST', '/wallet/withdraw', req, true);
+    return this._request<WithdrawResponse>(
+      "POST",
+      "/wallet/withdraw",
+      req,
+      true,
+    );
   }
 }

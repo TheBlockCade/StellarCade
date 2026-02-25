@@ -32,7 +32,7 @@ export const ErrorSeverity = {
   /** User must take an explicit action (connect wallet, switch network, etc.). */
   USER_ACTIONABLE: 'user_actionable',
   /** Non-recoverable — no retry or user action will resolve it. */
-  FATAL: 'fatal',
+  TERMINAL: 'terminal',
 } as const;
 
 export type ErrorSeverity = (typeof ErrorSeverity)[keyof typeof ErrorSeverity];

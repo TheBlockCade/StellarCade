@@ -3,7 +3,8 @@ const config = {
   preset: "ts-jest",
   testEnvironment: "jsdom",
   roots: ["<rootDir>/tests"],
-  testMatch: ["**/*.test.{ts,tsx}"],
+  testMatch: ["**/*.test.ts", "**/*.test.tsx"],
+  setupFilesAfterEnv: ["<rootDir>/tests/setup.js"],
   transform: {
     "^.+\\.tsx?$": [
       "ts-jest",
@@ -19,16 +20,12 @@ const config = {
     "^@/(.*)$": "<rootDir>/src/$1",
     "\\.(css|less|scss|sass)$": "<rootDir>/tests/__mocks__/styleMock.js",
   },
-  // Stub import.meta for Node/Jest environment.
   globals: {
     "import.meta": {
       env: {},
     },
   },
-  collectCoverageFrom: [
-    "src/**/*.ts",
-    "!src/**/*.d.ts",
-  ],
+  collectCoverageFrom: ["src/**/*.ts", "src/**/*.tsx", "!src/**/*.d.ts"],
   coverageDirectory: "coverage",
   coverageThreshold: {
     global: {
