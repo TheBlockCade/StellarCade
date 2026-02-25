@@ -1,9 +1,10 @@
 /** @type {import('jest').Config} */
 const config = {
   preset: "ts-jest",
-  testEnvironment: "node",
+  testEnvironment: "jsdom",
   roots: ["<rootDir>/tests"],
-  testMatch: ["**/*.test.ts"],
+  testMatch: ["**/*.test.ts", "**/*.test.tsx"],
+  setupFilesAfterEnv: ["<rootDir>/tests/setup.js"],
   transform: {
     "^.+\\.tsx?$": [
       "ts-jest",
@@ -18,16 +19,12 @@ const config = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
-  // Stub import.meta for Node/Jest environment.
   globals: {
     "import.meta": {
       env: {},
     },
   },
-  collectCoverageFrom: [
-    "src/**/*.ts",
-    "!src/**/*.d.ts",
-  ],
+  collectCoverageFrom: ["src/**/*.ts", "src/**/*.tsx", "!src/**/*.d.ts"],
   coverageDirectory: "coverage",
   coverageThreshold: {
     global: {
