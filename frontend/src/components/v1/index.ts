@@ -24,3 +24,10 @@ export type {
 
 export { default as ErrorNotice } from './ErrorNotice';
 export type { ErrorNoticeProps } from './ErrorNotice';
+
+export { ActionToolbar } from './ActionToolbar';
+export type {
+  ActionToolbarProps,
+  ToolbarAction,
+  ToolbarActionIntent
+} from './ActionToolbar';
