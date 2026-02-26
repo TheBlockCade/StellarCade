@@ -367,7 +367,7 @@ export class IdempotencyTransactionHandler implements IdempotencyService {
     return {
       code: 'RPC_UNKNOWN',
       domain: ErrorDomain.RPC,
-      severity: ErrorSeverity.FATAL,
+      severity: ErrorSeverity.TERMINAL,
       message,
     };
   }

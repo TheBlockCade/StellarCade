@@ -184,7 +184,7 @@ All errors are normalized to the `AppError` interface:
 interface AppError {
   code: AppErrorCode;
   domain: ErrorDomain;  // RPC, API, WALLET, CONTRACT, UNKNOWN
-  severity: ErrorSeverity;  // RETRYABLE, USER_ACTIONABLE, FATAL
+  severity: ErrorSeverity;  // RETRYABLE, USER_ACTIONABLE, TERMINAL
   message: string;
   originalError?: unknown;
   context?: Record<string, unknown>;
@@ -195,7 +195,7 @@ interface AppError {
 Errors are categorized by severity:
 - **RETRYABLE** — temporary failure, caller may retry after delay (e.g., network timeout)
 - **USER_ACTIONABLE** — user must take action (e.g., connect wallet, switch network)
-- **FATAL** — non-recoverable, no retry will succeed (e.g., validation error, contract error)
+- **TERMINAL** — non-recoverable, no retry will succeed (e.g., validation error, contract error)
 
 ## Cleanup and Maintenance
 

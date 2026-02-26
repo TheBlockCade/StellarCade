@@ -10,6 +10,8 @@ This folder contains the Soroban smart contracts for the Stellarcade platform.
 - `coin-flip/`: Logic for the classic head-or-tails game.
 - `daily-trivia/`: One-attempt-per-round trivia game with reward settlement.
 - `leaderboard/`: Centralized score tracking and ranking system.
+- `cross-chain-bridge/`: Secure asset transfers between Stellar and other chains.
+- `governance-token/`: Platform utility and voting power token.
 - `shared/`: Common types and utilities used across all contracts.
 
 ## 🛠 Prerequisites

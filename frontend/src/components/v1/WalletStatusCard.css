@@ -1,0 +1,295 @@
+/**
+ * WalletStatusCard Component Styles
+ *
+ * Follows the same conventions as EmptyStateBlock.css.
+ * Uses BEM naming: .wallet-status-card__[element]--[modifier]
+ */
+
+/*  Card container  */
+
+.wallet-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/*  Header row (badge + provider)  */
+
+.wallet-status-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.wallet-status-card__provider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.wallet-status-card__provider-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+/*  Status badge  */
+
+.wallet-status-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.wallet-status-card__badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Badge variants */
+.wallet-status-card__badge--connected {
+  background-color: #f0fdf4;
+  color: #16a34a;
+}
+.wallet-status-card__badge--connected .wallet-status-card__badge-dot {
+  background-color: #16a34a;
+}
+
+.wallet-status-card__badge--disconnected {
+  background-color: #f8fafc;
+  color: #64748b;
+}
+.wallet-status-card__badge--disconnected .wallet-status-card__badge-dot {
+  background-color: #94a3b8;
+}
+
+.wallet-status-card__badge--connecting,
+.wallet-status-card__badge--reconnecting {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+.wallet-status-card__badge--connecting .wallet-status-card__badge-dot,
+.wallet-status-card__badge--reconnecting .wallet-status-card__badge-dot {
+  background-color: #2563eb;
+  animation: wallet-badge-pulse 1.2s ease-in-out infinite;
+}
+
+.wallet-status-card__badge--error {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+.wallet-status-card__badge--error .wallet-status-card__badge-dot {
+  background-color: #dc2626;
+}
+
+@keyframes wallet-badge-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/*  Body (address + network)  */
+
+.wallet-status-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.wallet-status-card__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.wallet-status-card__label {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: 4rem;
+  flex-shrink: 0;
+}
+
+.wallet-status-card__value {
+  color: #1e293b;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.wallet-status-card__value--mono {
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+  font-size: 0.8125rem;
+}
+
+.wallet-status-card__value--muted {
+  color: #94a3b8;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/*  Error message  */
+
+.wallet-status-card__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.375rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+  line-height: 1.4;
+}
+
+.wallet-status-card__error-icon {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  margin-top: 0.05rem;
+}
+
+/*  Actions  */
+
+.wallet-status-card__actions {
+  display: flex;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.wallet-status-card__action-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.wallet-status-card__action-btn:focus {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
+}
+
+.wallet-status-card__action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wallet-status-card__action-btn--connect {
+  background-color: #4a90e2;
+  color: #ffffff;
+  border-color: #4a90e2;
+}
+.wallet-status-card__action-btn--connect:hover:not(:disabled) {
+  background-color: #357abd;
+  border-color: #357abd;
+}
+
+.wallet-status-card__action-btn--disconnect {
+  background-color: transparent;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+.wallet-status-card__action-btn--disconnect:hover:not(:disabled) {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.wallet-status-card__action-btn--retry {
+  background-color: transparent;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+.wallet-status-card__action-btn--retry:hover:not(:disabled) {
+  background-color: #fef2f2;
+  border-color: #f87171;
+}
+
+/*  Skeleton state  */
+
+.wallet-status-card--skeleton {
+  pointer-events: none;
+}
+
+.wallet-status-card__skeleton-badge {
+  width: 90px;
+  height: 22px;
+  border-radius: 9999px;
+}
+
+.wallet-status-card__skeleton-line {
+  height: 14px;
+  border-radius: 0.25rem;
+}
+
+.wallet-status-card__skeleton-btn {
+  height: 34px;
+  width: 90px;
+  border-radius: 0.375rem;
+}
+
+/*  Responsive  */
+
+@media (max-width: 480px) {
+  .wallet-status-card {
+    padding: 1rem;
+  }
+
+  .wallet-status-card__actions {
+    flex-direction: column;
+  }
+
+  .wallet-status-card__action-btn {
+    width: 100%;
+  }
+}
+
+/*  Dark mode */
+
+@media (prefers-color-scheme: dark) {
+  .wallet-status-card {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+
+  .wallet-status-card__value {
+    color: #f1f5f9;
+  }
+
+  .wallet-status-card__provider {
+    color: #94a3b8;
+  }
+
+  .wallet-status-card__action-btn--disconnect {
+    color: #94a3b8;
+    border-color: #475569;
+  }
+  .wallet-status-card__action-btn--disconnect:hover:not(:disabled) {
+    background-color: #334155;
+  }
+}
