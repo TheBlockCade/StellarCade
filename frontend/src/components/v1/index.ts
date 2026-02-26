@@ -42,3 +42,9 @@ export type {
   WalletCapabilities,
   WalletStatusError,
 } from './WalletStatusCard.types';
+
+export { AsyncStateBoundary } from './AsyncStateBoundary';
+export type { AsyncStateBoundaryProps } from './AsyncStateBoundary';
+
+export { ContractActionButton } from './ContractActionButton';
+export type { ContractActionButtonProps } from './ContractActionButton';
