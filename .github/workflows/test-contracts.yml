@@ -36,6 +36,7 @@ jobs:
           cd ../pattern-puzzle && cargo build --target wasm32-unknown-unknown --release
           cd ../emergency-pause && cargo build --target wasm32-unknown-unknown --release
           cd ../governance && cargo build --target wasm32-unknown-unknown --release
+          cd ../contract-role-registry && cargo build --target wasm32-unknown-unknown --release
 
       - name: Run Tests
         run: |
@@ -47,3 +48,13 @@ jobs:
           cd ../pattern-puzzle && cargo test
           cd ../emergency-pause && cargo test
           cd ../governance && cargo test
+          cd ../contract-role-registry && cargo test
+
+      - name: Verify Contract Documentation
+        run: |
+          cargo run --package stellarcade-contract-doc-generator --manifest-path contracts/contract-doc-generator/Cargo.toml
+          if [ -n "$(git status --porcelain docs/contracts)" ]; then
+            echo "Error: Contract documentation is out of sync. Please run 'cargo run --package stellarcade-contract-doc-generator' and commit the changes."
+            git diff docs/contracts
+            exit 1
+          fi

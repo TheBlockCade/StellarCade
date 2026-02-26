@@ -9,6 +9,7 @@ soroban-sdk = "25.0.2"
 
 [dev-dependencies]
 soroban-sdk = { version = "25.0.2", features = ["testutils"] }
+stellarcade-governance-token = { path = "../governance-token" }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -17,6 +17,22 @@ export type {
   ActionVariant,
 } from './EmptyStateBlock.types';
 
+export { default as ErrorNotice } from './ErrorNotice';
+export type { ErrorNoticeProps } from './ErrorNotice';
+
+export { ActionToolbar } from './ActionToolbar';
+export type {
+  ActionToolbarProps,
+  ToolbarAction,
+  ToolbarActionIntent
+} from './ActionToolbar';
+
+export { ContractEventFeed, default as ContractEventFeedDefault } from './ContractEventFeed';
+export type { ContractEventFeedProps } from './ContractEventFeed';
+
+export { PaginatedListController } from './PaginatedListController';
+export type { PaginatedListControllerProps } from './PaginatedListController';
+
 export { WalletStatusCard, default as WalletStatusCardDefault } from './WalletStatusCard';
 export type {
   WalletStatusCardProps,
