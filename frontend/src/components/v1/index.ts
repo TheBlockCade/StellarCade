@@ -5,7 +5,7 @@
  *
  * @example
  * ```tsx
- * import { EmptyStateBlock } from '@/components/v1';
+ * import { EmptyStateBlock, WalletStatusCard } from '@/components/v1';
  * ```
  */
 
@@ -16,11 +16,6 @@ export type {
   EmptyStateVariant,
   ActionVariant,
 } from './EmptyStateBlock.types';
-/**
- * v1 components namespace - reusable React components.
- *
- * @module components/v1
- */
 
 export { default as ErrorNotice } from './ErrorNotice';
 export type { ErrorNoticeProps } from './ErrorNotice';
@@ -34,5 +29,16 @@ export type {
 
 export { ContractEventFeed, default as ContractEventFeedDefault } from './ContractEventFeed';
 export type { ContractEventFeedProps } from './ContractEventFeed';
+
 export { PaginatedListController } from './PaginatedListController';
 export type { PaginatedListControllerProps } from './PaginatedListController';
+
+export { WalletStatusCard, default as WalletStatusCardDefault } from './WalletStatusCard';
+export type {
+  WalletStatusCardProps,
+  WalletStatusCardCallbacks,
+  WalletBadgeVariant,
+  WalletStatus,
+  WalletCapabilities,
+  WalletStatusError,
+} from './WalletStatusCard.types';

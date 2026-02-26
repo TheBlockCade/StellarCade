@@ -484,3 +484,5 @@ fn require_admin(env: &Env, caller: &Address) -> Result<(), Error> {
 
 #[cfg(test)]
 mod test;
+#[cfg(test)]
+mod test_custom_token;

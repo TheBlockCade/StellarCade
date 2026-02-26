@@ -36,6 +36,7 @@ jobs:
           cd ../pattern-puzzle && cargo build --target wasm32-unknown-unknown --release
           cd ../emergency-pause && cargo build --target wasm32-unknown-unknown --release
           cd ../governance && cargo build --target wasm32-unknown-unknown --release
+          cd ../contract-role-registry && cargo build --target wasm32-unknown-unknown --release
 
       - name: Run Tests
         run: |
@@ -47,6 +48,7 @@ jobs:
           cd ../pattern-puzzle && cargo test
           cd ../emergency-pause && cargo test
           cd ../governance && cargo test
+          cd ../contract-role-registry && cargo test
 
       - name: Verify Contract Documentation
         run: |
