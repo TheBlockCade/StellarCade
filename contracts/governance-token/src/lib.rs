@@ -11,7 +11,8 @@ pub enum Error {
     NotAuthorized = 1,
     AlreadyInitialized = 2,
     InsufficientBalance = 3,
-    Overflow = 4,
+    InvalidAmount = 4,
+    Overflow = 5,
 }
 
 #[contracttype]
@@ -30,6 +31,8 @@ pub struct GovernanceToken;
 
 #[contractimpl]
 impl GovernanceToken {
+    /// Initializes the contract with the admin address and token setup.
+    /// Requires admin authorization to prevent arbitrary initialization.
     pub fn init(
         env: Env, 
         admin: Address, 
@@ -40,21 +43,31 @@ impl GovernanceToken {
         if env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::AlreadyInitialized);
         }
+        
+        // Security Fix: Require admin auth during initialization
+        admin.require_auth();
+
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Name, &name);
         env.storage().instance().set(&DataKey::Symbol, &symbol);
         env.storage().instance().set(&DataKey::Decimals, &decimals);
         env.storage().instance().set(&DataKey::TotalSupply, &0i128);
+
+        env.events().publish(
+            (symbol_short!("init"), admin),
+            (name, symbol, decimals)
+        );
         Ok(())
     }
 
+    /// Mints new tokens to a recipient. Only admin can call.
     pub fn mint(env: Env, to: Address, amount: i128) -> Result<(), Error> {
+        if amount <= 0 {
+            return Err(Error::InvalidAmount);
+        }
+
         let admin: Address = env.storage().instance().get(&DataKey::Admin).ok_or(Error::NotAuthorized)?;
         admin.require_auth();
-
-        if amount <= 0 {
-            return Err(Error::Overflow);
-        }
 
         let balance = Self::balance(env.clone(), to.clone());
         let new_balance = balance.checked_add(amount).ok_or(Error::Overflow)?;
@@ -68,7 +81,12 @@ impl GovernanceToken {
         Ok(())
     }
 
+    /// Burns tokens from an account. Only admin can call.
     pub fn burn(env: Env, from: Address, amount: i128) -> Result<(), Error> {
+        if amount <= 0 {
+            return Err(Error::InvalidAmount);
+        }
+
         let admin: Address = env.storage().instance().get(&DataKey::Admin).ok_or(Error::NotAuthorized)?;
         admin.require_auth();
 
@@ -88,7 +106,11 @@ impl GovernanceToken {
         Ok(())
     }
 
+    /// Transfers tokens between accounts. Requires sender authorization.
     pub fn transfer(env: Env, from: Address, to: Address, amount: i128) -> Result<(), Error> {
+        if amount <= 0 {
+            return Err(Error::InvalidAmount);
+        }
         from.require_auth();
 
         let balance_from = Self::balance(env.clone(), from.clone());
@@ -131,7 +153,8 @@ impl GovernanceToken {
 #[cfg(test)]
 mod test {
     use super::*;
-    use soroban_sdk::{testutils::Address as _, Env};
+    use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
+    use soroban_sdk::{IntoVal};
 
     #[test]
     fn test_token_flow() {
@@ -145,7 +168,12 @@ mod test {
         let contract_id = env.register(GovernanceToken, ());
         let client = GovernanceTokenClient::new(&env, &contract_id);
 
-        client.init(&admin, &String::from_str(&env, "StellarCade Governance"), &String::from_str(&env, "SCG"), &18);
+        client.init(
+            &admin, 
+            &String::from_str(&env, "StellarCade Governance"), 
+            &String::from_str(&env, "SCG"), 
+            &18
+        );
 
         client.mint(&user1, &1000);
         assert_eq!(client.balance(&user1), 1000);
@@ -158,5 +186,38 @@ mod test {
         client.burn(&user2, &100);
         assert_eq!(client.balance(&user2), 300);
         assert_eq!(client.total_supply(), 900);
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Auth, InvalidAction)")]
+    fn test_unauthorized_mint() {
+        let env = Env::default();
+        let admin = Address::generate(&env);
+        let user = Address::generate(&env);
+        let malicious = Address::generate(&env);
+        let contract_id = env.register(GovernanceToken, ());
+        let client = GovernanceTokenClient::new(&env, &contract_id);
+
+        client.init(
+            &admin, 
+            &String::from_str(&env, "Test"), 
+            &String::from_str(&env, "T"), 
+            &0
+        );
+
+        // Use mock_auths to simulate authorization from malicious address
+        client.mock_auths(&[
+            MockAuth {
+                address: &malicious,
+                invoke: &MockAuthInvoke {
+                    contract: &contract_id,
+                    fn_name: "mint",
+                    args: (user.clone(), 1000i128).into_val(&env),
+                    sub_invokes: &[],
+                },
+            },
+        ]);
+
+        client.mint(&user, &1000);
     }
 }
