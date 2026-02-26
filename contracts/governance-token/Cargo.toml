@@ -1,15 +1,23 @@
 [package]
-name = "stellarcade-governance"
+name = "stellarcade-governance-token"
 version = "0.1.0"
 edition = "2021"
 publish = false
 
 [dependencies]
 soroban-sdk = "25.0.2"
+stellarcade-shared = { path = "../shared" }
 
 [dev-dependencies]
 soroban-sdk = { version = "25.0.2", features = ["testutils"] }
-stellarcade-governance-token = { path = "../governance-token" }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = false
+panic = "abort"
+lto = true
+codegen-units = 1

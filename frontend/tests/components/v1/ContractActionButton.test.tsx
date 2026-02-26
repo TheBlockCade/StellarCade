@@ -1,0 +1,88 @@
+import React from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { ContractActionButton } from '../../../src/components/v1/ContractActionButton';
+
+describe('ContractActionButton', () => {
+  it('runs action and calls onSuccess', async () => {
+    const action = jest.fn().mockResolvedValue({ tx: 'abc' });
+    const onSuccess = jest.fn();
+
+    render(
+      <ContractActionButton
+        label="Execute"
+        action={action}
+        walletConnected={true}
+        networkSupported={true}
+        onSuccess={onSuccess}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('contract-action-button'));
+
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+  });
+
+  it('blocks when wallet is not connected', () => {
+    const action = jest.fn().mockResolvedValue({});
+
+    render(
+      <ContractActionButton
+        label="Execute"
+        action={action}
+        walletConnected={false}
+        networkSupported={true}
+      />,
+    );
+
+    expect(screen.getByTestId('contract-action-button')).toBeDisabled();
+    expect(screen.getByTestId('contract-action-button-precondition')).toHaveTextContent('Connect wallet');
+  });
+
+  it('blocks duplicate triggers while in-flight', async () => {
+    let resolveAction: (() => void) | undefined;
+    const action = jest.fn().mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveAction = resolve;
+        }),
+    );
+
+    render(
+      <ContractActionButton
+        label="Execute"
+        action={action}
+        walletConnected={true}
+        networkSupported={true}
+      />,
+    );
+
+    const button = screen.getByTestId('contract-action-button');
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(action).toHaveBeenCalledTimes(1);
+    resolveAction?.();
+    await waitFor(() => expect(button).not.toBeDisabled());
+  });
+
+  it('maps failures and calls onError', async () => {
+    const action = jest.fn().mockRejectedValue(new Error('contract failed'));
+    const onError = jest.fn();
+
+    render(
+      <ContractActionButton
+        label="Execute"
+        action={action}
+        walletConnected={true}
+        networkSupported={true}
+        onError={onError}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('contract-action-button'));
+
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('contract-action-button-error')).toBeInTheDocument();
+  });
+});
