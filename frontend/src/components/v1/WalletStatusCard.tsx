@@ -1,0 +1,384 @@
+/**
+ * WalletStatusCard Component
+ *
+ * Displays normalized wallet connection state, address, network, and provider.
+ * Renders deterministic status badges and exposes connect/disconnect/retry callbacks.
+ * Supports skeleton loading and fallback states.
+ *
+ * @module components/v1/WalletStatusCard
+ */
+
+import React, { useCallback } from 'react';
+import { SkeletonBase } from './LoadingSkeletonSet';
+import {
+  BADGE_VARIANT_MAP,
+  STATUS_LABEL_MAP,
+  type WalletStatusCardProps,
+  type WalletBadgeVariant,
+  type WalletCapabilities,
+  type WalletStatus,
+} from './WalletStatusCard.types';
+import './WalletStatusCard.css';
+
+// ── Internal helpers ───────────────────────────────────────────────────────────
+
+/**
+ * Truncates a long wallet address for display.
+ * e.g. "GABCD...WXYZ"
+ */
+function truncateAddress(address: string): string {
+  if (address.length <= 12) return address;
+  return `${address.slice(0, 6)}\u2026${address.slice(-4)}`;
+}
+
+/**
+ * Sanitizes a string by stripping HTML tags.
+ * Guards against prop-injected markup.
+ */
+
+function sanitize(value: string): string {
+  return value
+    .replace(/<(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<[^>]*>/g, '');
+}
+/**
+ * Derives WalletCapabilities from a WalletStatus when the caller
+ * does not supply them explicitly.
+ */
+function deriveCapabilities(status: WalletStatus): WalletCapabilities {
+  return {
+    isConnected: status === 'CONNECTED',
+    isConnecting: status === 'CONNECTING',
+    isReconnecting: status === 'RECONNECTING',
+    canConnect:
+      status === 'DISCONNECTED' ||
+      status === 'PROVIDER_MISSING' ||
+      status === 'PERMISSION_DENIED' ||
+      status === 'STALE_SESSION' ||
+      status === 'ERROR',
+  };
+}
+
+/**
+ * Safely invokes an async or sync callback, logging errors without crashing.
+ */
+function safeCall(
+  fn: (() => void | Promise<void>) | undefined,
+  label: string,
+): void {
+  if (typeof fn !== 'function') return;
+  try {
+    const result = fn();
+    if (result instanceof Promise) {
+      result.catch((err: unknown) => {
+        console.error(`[WalletStatusCard] ${label} callback failed:`, err);
+      });
+    }
+  } catch (err) {
+    console.error(`[WalletStatusCard] ${label} callback threw:`, err);
+  }
+}
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
+
+interface StatusBadgeProps {
+  variant: WalletBadgeVariant;
+  label: string;
+}
+
+function StatusBadge({ variant, label }: StatusBadgeProps): React.JSX.Element {
+  return (
+    <span
+      className={`wallet-status-card__badge wallet-status-card__badge--${variant}`}
+      data-testid="wallet-status-badge"
+      aria-label={`Wallet status: ${label}`}
+    >
+      <span className="wallet-status-card__badge-dot" aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
+
+// ── Skeleton state ─────────────────────────────────────────────────────────────
+
+interface WalletStatusCardSkeletonProps {
+  className?: string;
+  testId: string;
+}
+
+function WalletStatusCardSkeleton({
+  className,
+  testId,
+}: WalletStatusCardSkeletonProps): React.JSX.Element {
+  const containerClass = [
+    'wallet-status-card',
+    'wallet-status-card--skeleton',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <div
+      className={containerClass}
+      data-testid={testId}
+      aria-busy="true"
+      aria-label="Loading wallet status"
+    >
+      {/* Header row */}
+      <div className="wallet-status-card__header">
+        <SkeletonBase
+          className="wallet-status-card__skeleton-badge"
+          height="22px"
+          width="90px"
+          borderRadius="9999px"
+        />
+        <SkeletonBase
+          className="wallet-status-card__skeleton-line"
+          height="14px"
+          width="80px"
+        />
+      </div>
+
+      {/* Body rows */}
+      <div className="wallet-status-card__body">
+        <SkeletonBase
+          className="wallet-status-card__skeleton-line"
+          height="14px"
+          width="60%"
+        />
+        <SkeletonBase
+          className="wallet-status-card__skeleton-line"
+          height="14px"
+          width="40%"
+        />
+      </div>
+
+      {/* Action placeholder */}
+      <div className="wallet-status-card__actions">
+        <SkeletonBase
+          className="wallet-status-card__skeleton-btn"
+          height="34px"
+          width="90px"
+          borderRadius="0.375rem"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
+const DEFAULT_STATUS: WalletStatus = 'DISCONNECTED';
+
+/**
+ * WalletStatusCard — wallet state summary component.
+ *
+ * Renders a card showing the current wallet connection status with badge,
+ * address, network, provider info, error messaging, and action buttons.
+ *
+ * @example
+ * ```tsx
+ * // Controlled usage (recommended)
+ * const wallet = useWalletStatus();
+ * <WalletStatusCard
+ *   status={wallet.status}
+ *   address={wallet.address}
+ *   network={wallet.network}
+ *   provider={wallet.provider}
+ *   capabilities={wallet.capabilities}
+ *   error={wallet.error}
+ *   onConnect={() => wallet.connect()}
+ *   onDisconnect={wallet.disconnect}
+ *   onRetry={wallet.refresh}
+ * />
+ *
+ * // Skeleton / loading state
+ * <WalletStatusCard isLoading />
+ * ```
+ */
+export const WalletStatusCard: React.FC<WalletStatusCardProps> = ({
+  status = DEFAULT_STATUS,
+  address = null,
+  network = null,
+  provider = null,
+  capabilities: capabilitiesProp,
+  error = null,
+  isLoading = false,
+  onConnect,
+  onDisconnect,
+  onRetry,
+  className,
+  testId = 'wallet-status-card',
+}) => {
+  // ── Loading state ────────────────────────────────────────────────────────────
+  if (isLoading) {
+    return <WalletStatusCardSkeleton className={className} testId={testId} />;
+  }
+
+  // ── Derived values ───────────────────────────────────────────────────────────
+  const capabilities: WalletCapabilities =
+    capabilitiesProp ?? deriveCapabilities(status);
+
+  const badgeVariant: WalletBadgeVariant = BADGE_VARIANT_MAP[status];
+  const statusLabel: string = STATUS_LABEL_MAP[status];
+
+  const sanitizedAddress = address ? sanitize(address) : null;
+  const sanitizedNetwork = network ? sanitize(network) : null;
+  const sanitizedProviderName =
+    provider?.name ? sanitize(provider.name) : null;
+
+  // ── Action guards ────────────────────────────────────────────────────────────
+  const canConnect =
+    capabilities.canConnect && typeof onConnect === 'function';
+  const canDisconnect =
+    capabilities.isConnected && typeof onDisconnect === 'function';
+  const canRetry =
+    error !== null &&
+    error.recoverable &&
+    typeof onRetry === 'function';
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const handleConnect = useCallback(() => {
+    if (!canConnect) return;
+    safeCall(onConnect, 'onConnect');
+  }, [canConnect, onConnect]);
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const handleDisconnect = useCallback(() => {
+    if (!canDisconnect) return;
+    safeCall(onDisconnect, 'onDisconnect');
+  }, [canDisconnect, onDisconnect]);
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const handleRetry = useCallback(() => {
+    if (!canRetry) return;
+    safeCall(onRetry, 'onRetry');
+  }, [canRetry, onRetry]);
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+  const containerClass = ['wallet-status-card', className]
+    .filter(Boolean)
+    .join(' ');
+
+  const showActions = canConnect || canDisconnect || canRetry;
+
+  return (
+    <div
+      className={containerClass}
+      data-testid={testId}
+      role="region"
+      aria-label="Wallet status"
+    >
+      {/* ── Header: badge + provider ── */}
+      <div className="wallet-status-card__header">
+        <StatusBadge variant={badgeVariant} label={statusLabel} />
+
+        {sanitizedProviderName !== null && (
+          <div className="wallet-status-card__provider">
+            <span>{sanitizedProviderName}</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Body: address + network ── */}
+      <div className="wallet-status-card__body">
+        <div className="wallet-status-card__row">
+          <span className="wallet-status-card__label">Address</span>
+          {sanitizedAddress !== null ? (
+            <span
+              className="wallet-status-card__value wallet-status-card__value--mono"
+              title={sanitizedAddress}
+              data-testid="wallet-address"
+            >
+              {truncateAddress(sanitizedAddress)}
+            </span>
+          ) : (
+            <span
+              className="wallet-status-card__value wallet-status-card__value--muted"
+              data-testid="wallet-address"
+            >
+              &mdash;
+            </span>
+          )}
+        </div>
+
+        <div className="wallet-status-card__row">
+          <span className="wallet-status-card__label">Network</span>
+          {sanitizedNetwork !== null ? (
+            <span
+              className="wallet-status-card__value"
+              data-testid="wallet-network"
+            >
+              {sanitizedNetwork}
+            </span>
+          ) : (
+            <span
+              className="wallet-status-card__value wallet-status-card__value--muted"
+              data-testid="wallet-network"
+            >
+              &mdash;
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ── Error message ── */}
+      {error !== null && (
+        <div
+          className="wallet-status-card__error"
+          role="alert"
+          data-testid="wallet-error"
+        >
+          <span className="wallet-status-card__error-icon" aria-hidden="true">
+            &#9888;
+          </span>
+          <span>{sanitize(error.message)}</span>
+        </div>
+      )}
+
+      {/* ── Actions ── */}
+      {showActions && (
+        <div className="wallet-status-card__actions">
+          {canConnect && (
+            <button
+              type="button"
+              className="wallet-status-card__action-btn wallet-status-card__action-btn--connect"
+              onClick={handleConnect}
+              data-testid="wallet-connect-btn"
+            >
+              Connect
+            </button>
+          )}
+
+          {canDisconnect && (
+            <button
+              type="button"
+              className="wallet-status-card__action-btn wallet-status-card__action-btn--disconnect"
+              onClick={handleDisconnect}
+              data-testid="wallet-disconnect-btn"
+            >
+              Disconnect
+            </button>
+          )}
+
+          {canRetry && (
+            <button
+              type="button"
+              className="wallet-status-card__action-btn wallet-status-card__action-btn--retry"
+              onClick={handleRetry}
+              data-testid="wallet-retry-btn"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+WalletStatusCard.displayName = 'WalletStatusCard';
+
+export default WalletStatusCard;
