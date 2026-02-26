@@ -31,3 +31,6 @@ export type {
   ToolbarAction,
   ToolbarActionIntent
 } from './ActionToolbar';
+
+export { ContractEventFeed, default as ContractEventFeedDefault } from './ContractEventFeed';
+export type { ContractEventFeedProps } from './ContractEventFeed';
